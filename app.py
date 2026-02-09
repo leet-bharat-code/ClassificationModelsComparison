@@ -59,11 +59,13 @@ def main():
     feature_names = list(result["feature_names"])
     metrics_df = result["metrics_df"]
 
-    # ---- Model selection ----
+    # ---- Model selection (for metrics & confusion matrix only) ----
     selected_model = st.selectbox(
         "Select model",
         options=list(pipelines.keys()),
         index=0,
+        key="model_metrics",
+        help="Choose which model's evaluation metrics and confusion matrix to view.",
     )
 
     # ---- Evaluation metrics (all 6) ----
@@ -96,9 +98,16 @@ def main():
     report_df = pd.DataFrame(report).transpose()
     st.dataframe(report_df, use_container_width=True)
 
-    # ---- CSV upload: TEST DATA ONLY ----
+    # ---- Upload TEST data only (second dropdown: testing only) ----
     st.subheader("Upload TEST data only")
     st.caption("Upload TEST data only. CSV must have the same feature columns as the training data. Labels optional.")
+    selected_model_for_test = st.selectbox(
+        "Select model for test data prediction",
+        options=list(pipelines.keys()),
+        index=0,
+        key="model_test_data",
+        help="Choose which model to use for predictions on the uploaded CSV. Does not affect metrics or confusion matrix above.",
+    )
     uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
     if uploaded_file is not None:
         try:
@@ -111,8 +120,8 @@ def main():
                 st.error(msg)
             else:
                 X_upload = uploaded_df[feature_names].copy()
-                pipe = pipelines[selected_model]
-                preds = pipe.predict(X_upload)
+                pipe_test = pipelines[selected_model_for_test]
+                preds = pipe_test.predict(X_upload)
                 pred_labels = label_encoder.inverse_transform(preds)
                 result_upload = pd.DataFrame({"predicted_label": pred_labels, "predicted_class": preds})
                 st.write("Predictions:")
