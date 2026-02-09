@@ -1,4 +1,4 @@
-# Classification Models — Academic Submission
+# Classification Models
 
 ## Required workflow
 
@@ -39,27 +39,34 @@ All models are trained on the same preprocessed data and evaluated on the same t
 
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |-------|----------|-----|------------|--------|-----|-----|
-| Logistic Regression | (paste from print_eval_table.py) |
-| Decision Tree | (paste from print_eval_table.py) |
-| K-Nearest Neighbors | (paste from print_eval_table.py) |
-| Naive Bayes | (paste from print_eval_table.py) |
-| Random Forest | (paste from print_eval_table.py) |
-| XGBoost | (paste from print_eval_table.py) |
+| Logistic Regression | 0.7712 | 0.9808 | 0.7708 | 0.7699 | 0.7695 | 0.7621 |
+| Decision Tree | 0.8742 | 0.9346 | 0.8751 | 0.8742 | 0.8743 | 0.8692 | 
+| K-Nearest Neighbors | 0.9400 | 0.9956 | 0.9413 | 0.9397 | 0.9400 | 0.9376 |
+| Naive Bayes | 0.6506 | 0.9576 | 0.6614 | 0.6494 | 0.6456 | 0.6374 |
+| Random Forest | 0.9680 | 0.9996 | 0.9682 | 0.9677 | 0.9678 | 0.9667 |
+| XGBoost | 0.9654 | 0.9997 | 0.9655 | 0.9652 | 0.9652 | 0.9640 |
 
 ---
 
 ## 4. Observations
 
-- **Logistic Regression:** A linear model that learns decision boundaries in the scaled feature space. It typically achieves moderate accuracy on Letter Recognition because the problem is not linearly separable; some letter pairs (e.g. O vs Q) are similar in the given features. It is stable and has low variance but can underfit, leading to lower AUC and recall on harder classes. Bias-variance: higher bias, lower variance.
+- **Logistic Regression:**  
+  Logistic Regression shows lower performance compared to tree-based and ensemble models. While the AUC is relatively high, the overall accuracy, F1-score, and MCC are noticeably lower. This indicates that the linear decision boundary is insufficient to capture the complex, non-linear patterns present in the Letter Recognition dataset. The model exhibits higher bias and tends to underfit, making it more suitable as a baseline rather than a strong classifier for this task.
 
-- **Decision Tree:** Can capture non-linear structure and interactions without scaling. It often overfits when grown deep, leading to higher training accuracy but a wider gap with test performance. Pruning or depth limits would reduce overfitting. On Letter Recognition, single trees usually underperform ensembles; variance is high and bias is moderate.
+- **Decision Tree:**  
+  The Decision Tree performs better than Logistic Regression and Naive Bayes but lags behind ensemble models. It is able to capture non-linear relationships in the data, which improves accuracy and F1-score. However, as a single tree, it is prone to overfitting and has higher variance. This limits its generalization performance on the test set, explaining the gap compared to Random Forest and XGBoost.
 
-- **K-Nearest Neighbors:** Non-parametric and sensitive to the local structure of the feature space. Scaling is important (included in the pipeline). KNN can do well when classes form compact clusters but is sensitive to irrelevant features and class imbalance. Typically shows moderate to good accuracy; its performance depends heavily on the choice of K and the distance metric. Variance can be high.
+- **K-Nearest Neighbors:**  
+  KNN achieves strong performance with high accuracy, F1-score, and AUC. This suggests that the feature space contains meaningful local neighborhoods that help classify letters effectively. However, KNN still performs slightly worse than ensemble methods and can be computationally expensive during inference. Its performance is sensitive to the choice of K and distance metric, which affects stability.
 
-- **Naive Bayes (Gaussian):** Assumes features are conditionally independent given the class and models each class with a Gaussian. The Letter Recognition features are not truly independent, so the assumption is violated; nevertheless, Gaussian NB often gives reasonable baseline performance with very fast training. It tends to have higher bias and lower variance; AUC and MCC may lag behind more flexible models.
+- **Naive Bayes (Gaussian):**  
+  Naive Bayes shows the weakest performance among all evaluated models. Although the AUC is reasonably high, the low accuracy, F1-score, and MCC indicate poor overall classification quality. This is expected because the conditional independence assumption of Naive Bayes does not hold for the Letter Recognition features, which are correlated. As a result, Naive Bayes serves mainly as a fast and simple baseline model.
 
-- **Random Forest:** Ensemble of decision trees with bagging and random feature subsets. Averages over many trees to reduce variance while keeping low bias. Usually achieves clearly better accuracy, AUC, and F1 than a single Decision Tree on this dataset. Less prone to overfitting than a single deep tree. Typically among the top performers for Letter Recognition.
+- **Random Forest:**  
+  Random Forest delivers the best overall performance across almost all metrics, including accuracy, precision, recall, F1-score, and MCC. By combining multiple decision trees and averaging their predictions, the model effectively reduces overfitting while maintaining strong predictive power. Its near-perfect AUC reflects excellent class separability. This makes Random Forest the most reliable and well-balanced model for this dataset.
 
-- **XGBoost:** Gradient-boosted trees that sequentially correct errors of the previous model. Often reaches the best or near-best accuracy and AUC on this task. Can overfit if too many rounds or too deep trees are used; with sensible defaults it balances bias and variance well. Generally outperforms Random Forest when tuned appropriately, and both ensembles tend to outperform the single models (LR, DT, KNN, NB) on this multiclass problem.
+- **XGBoost:**  
+  XGBoost also achieves excellent performance, closely matching Random Forest across all metrics. Its extremely high AUC indicates very strong discrimination between classes. While slightly below Random Forest in some metrics, XGBoost remains highly competitive and demonstrates the strength of boosting-based ensembles. With careful tuning, it can match or even surpass Random Forest, making it another strong candidate for deployment.
 
-Overall, ensembles (Random Forest and XGBoost) tend to perform better than single models due to lower variance and better use of the feature space. Logistic Regression and Naive Bayes provide stable baselines with higher bias. The Decision Tree alone is the most prone to overfitting; KNN’s performance is highly dependent on preprocessing and neighborhood size.
+**Overall Conclusion:**  
+Ensemble models, particularly **Random Forest** and **XGBoost**, outperform single and linear models on the Letter Recognition task due to their ability to capture complex feature interactions and reduce variance. **KNN** performs well but is less scalable, while **Decision Tree**, **Logistic Regression**, and **Naive Bayes** show progressively lower performance due to overfitting, underfitting, or restrictive assumptions. 
