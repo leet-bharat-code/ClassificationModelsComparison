@@ -1,10 +1,10 @@
-Optional: Place the UCI Letter Recognition dataset here for offline use.
+Dataset and metrics (no model artifacts committed).
 
-1. Download from:
-   https://archive.ics.uci.edu/ml/machine-learning-databases/letter-recognition/letter-recognition.data
+- letter-recognition.data: UCI Letter Recognition dataset.
+  If missing: first run downloads from UCI and saves here.
+  For offline use: download and place this file here.
 
-2. Save the file as: letter-recognition.data (in this data/ folder)
+- evaluation_results.csv: Written by python -m model.train_models.
+  Used by scripts/print_eval_table.py and by the app (via in-memory training).
 
-3. If this file is present, the app and training will use it instead of fetching from the URL.
-   If not present, the first run (training or Streamlit) will attempt to download from the URL
-   and requires network access.
+No .joblib/.pkl files are stored here; models are created at runtime.
