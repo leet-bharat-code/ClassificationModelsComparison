@@ -1,62 +1,45 @@
 """
 Training logic for all six classification models.
-Uses sklearn Pipelines for preprocessing + model. Saves fitted pipelines and
-evaluation results. Training logic is NOT in app.py.
+Uses model/registry for estimators. Trains in memory by default.
+Metrics persisted to data/evaluation_results.csv (lightweight).
+Optional save_artifacts flag to write .joblib to model/artifacts/.
 """
 
 import os
-import joblib
 import pandas as pd
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import RandomForestClassifier
-import xgboost as xgb
 
-from model.data_loader import get_train_test_splits, FEATURE_NAMES
+from model.data_loader import get_train_test_splits, FEATURE_NAMES, _get_data_dir
 from model.evaluate import compute_all_metrics, metrics_to_dataframe
+from model.registry import get_estimators
 
 RANDOM_STATE = 42
-ARTIFACTS_DIR = os.path.join(os.path.dirname(__file__), "artifacts")
-RESULTS_FILENAME = "evaluation_results.csv"
+METRICS_FILENAME = "evaluation_results.csv"
 
 
-def _ensure_artifacts_dir():
-    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+def _get_metrics_path():
+    """Path to metrics CSV in data/ (lightweight, no .joblib)."""
+    return os.path.join(_get_data_dir(), METRICS_FILENAME)
 
 
 def _build_preprocessing():
     return Pipeline([("scaler", StandardScaler())])
 
 
-def _get_models():
-    """Return dict of (name -> sklearn/XGBoost estimator). All use fixed random_state where applicable."""
-    return {
-        "Logistic Regression": LogisticRegression(
-            random_state=RANDOM_STATE, max_iter=1000
-        ),
-        "Decision Tree": DecisionTreeClassifier(random_state=RANDOM_STATE),
-        "K-Nearest Neighbors": KNeighborsClassifier(),
-        "Naive Bayes": GaussianNB(),
-        "Random Forest": RandomForestClassifier(random_state=RANDOM_STATE),
-        "XGBoost": xgb.XGBClassifier(
-            random_state=RANDOM_STATE,
-            eval_metric="mlogloss",
-        ),
-    }
-
-
-def train_all_models():
+def train_all_models(save_artifacts: bool = False):
     """
-    Load data, train all six models with preprocessing pipeline,
-    evaluate on the same test set, save pipelines and results.
-    Returns (results_df, label_encoder, n_classes).
+    Train all six models on the same dataset, compute metrics, persist metrics CSV.
+    IF save_artifacts=False (default): train in memory, write metrics to data/evaluation_results.csv, return objects.
+    IF save_artifacts=True: also save pipelines/label_encoder/meta to model/artifacts/ (optional).
+
+    Returns:
+        metrics_df: pandas DataFrame with columns Model | Accuracy | AUC | Precision | Recall | F1 | MCC
+        pipelines: dict of (model_name -> fitted Pipeline)
+        label_encoder: fitted LabelEncoder
+        meta: dict with n_classes, feature_names
     """
-    _ensure_artifacts_dir()
     splits = get_train_test_splits(random_state=RANDOM_STATE)
     X_train = splits["X_train"]
     X_test = splits["X_test"]
@@ -65,44 +48,46 @@ def train_all_models():
     label_encoder = splits["label_encoder"]
     n_classes = len(np.unique(y_train))
 
-    preproc = _build_preprocessing()
-    X_train_scaled = preproc.fit_transform(X_train)
-    X_test_scaled = preproc.transform(X_test)
-
-    models = _get_models()
+    estimators = get_estimators()
     metrics_list = []
+    pipelines = {}
 
-    for name, estimator in models.items():
+    for name, estimator in estimators.items():
         pipe = Pipeline([
-            ("preprocessor", _build_preprocessing().fit(X_train, y_train)),
+            ("preprocessor", _build_preprocessing()),
             ("classifier", estimator),
         ])
         pipe.fit(X_train, y_train)
         y_pred = pipe.predict(X_test)
         y_proba = pipe.predict_proba(X_test)
-
         metrics = compute_all_metrics(
             y_test, y_pred, y_proba, n_classes, model_name=name
         )
         metrics_list.append(metrics)
+        pipelines[name] = pipe
 
-        safe_name = name.replace(" ", "_").lower()
-        path = os.path.join(ARTIFACTS_DIR, f"pipeline_{safe_name}.joblib")
-        joblib.dump(pipe, path)
+    metrics_df = metrics_to_dataframe(metrics_list)
+    meta = {"n_classes": n_classes, "feature_names": FEATURE_NAMES}
 
-    joblib.dump(label_encoder, os.path.join(ARTIFACTS_DIR, "label_encoder.joblib"))
-    joblib.dump(preproc, os.path.join(ARTIFACTS_DIR, "preprocessor.joblib"))
-    joblib.dump({"n_classes": n_classes, "feature_names": FEATURE_NAMES}, 
-                os.path.join(ARTIFACTS_DIR, "meta.joblib"))
+    # Persist metrics in lightweight format (CSV in data/)
+    os.makedirs(_get_data_dir(), exist_ok=True)
+    metrics_df.to_csv(_get_metrics_path(), index=False)
 
-    results_df = metrics_to_dataframe(metrics_list)
-    results_path = os.path.join(ARTIFACTS_DIR, RESULTS_FILENAME)
-    results_df.to_csv(results_path, index=False)
+    if save_artifacts:
+        import joblib
+        artifacts_dir = os.path.join(os.path.dirname(__file__), "artifacts")
+        os.makedirs(artifacts_dir, exist_ok=True)
+        for name, pipe in pipelines.items():
+            safe = name.replace(" ", "_").lower()
+            joblib.dump(pipe, os.path.join(artifacts_dir, f"pipeline_{safe}.joblib"))
+        joblib.dump(label_encoder, os.path.join(artifacts_dir, "label_encoder.joblib"))
+        joblib.dump(meta, os.path.join(artifacts_dir, "meta.joblib"))
 
-    return results_df, label_encoder, n_classes
+    return metrics_df, pipelines, label_encoder, meta
 
 
 if __name__ == "__main__":
-    results_df, le, n_classes = train_all_models()
+    metrics_df, pipelines, le, meta = train_all_models(save_artifacts=False)
     print("Training complete. Evaluation results:")
-    print(results_df.to_string())
+    print(metrics_df.to_string())
+    print(f"\nMetrics saved to {_get_metrics_path()}")

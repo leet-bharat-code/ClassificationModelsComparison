@@ -1,6 +1,14 @@
 # Classification Models — Academic Submission
 
-**How to run:** Install dependencies (`pip install -r requirements.txt`), then run training once (requires network to download the UCI dataset, or place `letter-recognition.data` in `data/`): `python -m model.train_models`. Then start the app: `streamlit run app.py`. To get the evaluation table for Section 3, run `python scripts/print_eval_table.py` after training and paste the output into the table below.
+## Required workflow
+
+1. `pip install -r requirements.txt`
+2. `python -m model.train_models` — trains all models and computes metrics (writes `data/evaluation_results.csv`; no .joblib committed)
+3. `python scripts/print_eval_table.py` — prints the evaluation table to stdout; copy into Section 3 below
+4. `streamlit run app.py`
+5. Deploy on Streamlit Community Cloud (training runs automatically if needed; no artifacts required)
+
+**Dataset:** If `data/letter-recognition.data` does not exist, the first run downloads it from UCI and saves it to `data/`. For offline use, place the file in `data/` before running.
 
 ---
 
@@ -21,24 +29,22 @@ This project addresses a **multiclass classification** task: predicting the iden
 
 - **Target variable:** `letter` — capital letter A through Z (26 classes).
 
-The data is split into train and test sets with a fixed `random_state=42` and 75% train / 25% test. Preprocessing includes scaling via `StandardScaler` inside sklearn Pipelines. No encoding is required for the target beyond label encoding (A–Z to 0–25), as all inputs are numeric.
+Dataset handling: if the file exists in `data/`, it is loaded from there; otherwise it is downloaded from the UCI URL and saved to `data/`. Train/test split uses a fixed `random_state=42` (75% train / 25% test). Preprocessing uses `StandardScaler` inside sklearn Pipelines.
 
 ---
 
 ## 3. Models Used and Evaluation
 
-All models are trained on the same preprocessed data and evaluated on the same test set. Metrics are computed with `sklearn.metrics` and stored in a pandas DataFrame (and in `model/artifacts/evaluation_results.csv`). The comparison table below has the required columns: Model | Accuracy | AUC | Precision | Recall | F1 | MCC.
+All models are trained on the same preprocessed data and evaluated on the same test set. Metrics (Accuracy, AUC, Precision, Recall, F1, MCC) are computed with `sklearn.metrics` and stored in a pandas DataFrame and in `data/evaluation_results.csv`. Table below: paste output of `python scripts/print_eval_table.py`.
 
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |-------|----------|-----|------------|--------|-----|-----|
-| Logistic Regression | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-| Decision Tree | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-| K-Nearest Neighbors | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-| Naive Bayes | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-| Random Forest | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-| XGBoost | (run training) | (run training) | (run training) | (run training) | (run training) | (run training) |
-
-**Note:** Run `python -m model.train_models` from the project root (with network access for first-time dataset download) to generate `model/artifacts/evaluation_results.csv`. That CSV contains the exact values for all six models and all six metrics; you can paste them into this table for your submission.
+| Logistic Regression | (paste from print_eval_table.py) |
+| Decision Tree | (paste from print_eval_table.py) |
+| K-Nearest Neighbors | (paste from print_eval_table.py) |
+| Naive Bayes | (paste from print_eval_table.py) |
+| Random Forest | (paste from print_eval_table.py) |
+| XGBoost | (paste from print_eval_table.py) |
 
 ---
 
