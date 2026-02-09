@@ -1,0 +1,35 @@
+# Byte-code files
+*.pyc
+__pycache__/
+
+# Environments
+.venv/
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Editor/IDE-specific files
+.vscode/ # Uncomment if you want to ignore the entire VS Code settings folder
+.idea/ # Common for PyCharm/IntelliJ
+
+# Project build files/caches
+.cache/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.tox/
+target/
+dist/
+build/
+
+# Installer logs
+*.egg-info/
+*.manifest
+*.spec
+
+model/artifacts/
+model/artifacts/*.joblib
+# OS-specific files
+.DS_Store
+Thumbs.db
